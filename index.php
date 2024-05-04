@@ -1,6 +1,6 @@
 <?php
 session_start();
-const PASSWORD = '230788'; // Senha para acesso
+const PASSWORD = 'Senha'; // Senha para acesso
 
 // Check login
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['password'])) {
