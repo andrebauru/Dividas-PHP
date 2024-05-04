@@ -1,6 +1,6 @@
 <?php
 session_start();
-const PASSWORD = 'Senha'; // Senha para acesso
+const PASSWORD = '230788'; // Senha para acesso
 
 // Verifica se o formulário foi enviado
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['password'])) {
@@ -59,14 +59,6 @@ function getTotalMes($conn) {
     return $row['total_mes'];
 }
 
-// Função para calcular o total pago durante o ano
-function getTotalPagoAno($conn) {
-    $sql = "SELECT SUM(valor_total) as total_ano FROM dividas WHERE pago = 1 AND YEAR(data_vencimento) = YEAR(CURDATE())";
-    $result = $conn->query($sql);
-    $row = $result->fetch_assoc();
-    return $row['total_ano'];
-}
-
 // Atualizar ou excluir dívidas
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['atualizar'])) {
@@ -87,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $parcelas = $_POST['parcelas'];
         $repeticoes = $_POST['repeticoes'];
 
-        for ($i = 0; $i < $repeticoes; $i++) {
+        for ($i = 0; i < $repeticoes; $i++) {
             $nova_data_vencimento = date('Y-m-d', strtotime("+$i month", strtotime($data_vencimento)));
             $sql = "INSERT INTO dividas (descricao, valor_total, data_vencimento, parcelas) VALUES (?, ?, ?, ?)";
             $stmt = $conn->prepare($sql);
@@ -142,7 +134,6 @@ $sql = "SELECT * FROM dividas WHERE pago = 0";
 $result = $conn->query($sql);
 $totalDividas = getTotalDividas($conn);
 $totalMes = getTotalMes($conn);
-$totalPagoAno = getTotalPagoAno($conn);
 
 ?>
 <!DOCTYPE html>
@@ -169,7 +160,7 @@ $totalPagoAno = getTotalPagoAno($conn);
                 </div>
                 <div class="form-group">
                     <label for="data_vencimento">Data de Vencimento:</label>
-                    <input type="date" class="form-control" id="data_vencimento" name="data_vencimento" required>
+                    <input type='date' class="form-control" id="data_vencimento" name="data_vencimento" required>
                 </div>
                 <div class="form-group">
                     <label for="parcelas">Quantidade de Parcelamento:</label>

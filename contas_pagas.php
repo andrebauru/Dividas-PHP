@@ -59,6 +59,7 @@ $totalPagoAno = getTotalPagoAno($conn);
     <h3>Total Pago Este Mês: ¥ <?= number_format($totalPagoMes, 0, ',', '.') ?></h3>
     <h3>Total Pago Durante o Ano: ¥ <?= number_format($totalPagoAno, 0, ',', '.') ?></h3>
     <h3><a href="index.php" class="btn btn-info">Voltar ao Gerenciador de Dívidas</a></h3>
+    <h3><a href="index.php" class="btn btn-warning">Retornar a Contas a Pagar</a></h3>
     <h3>Dívidas Pagas</h3>
     <table class="table">
         <thead>
