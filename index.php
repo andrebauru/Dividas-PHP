@@ -2,15 +2,16 @@
 session_start();
 const PASSWORD = 'Senha'; // Senha para acesso
 
-// Check login
+// Verifica se o formulário foi enviado
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['password'])) {
     if ($_POST['password'] === PASSWORD) {
         $_SESSION['authenticated'] = true;
     } else {
-        echo "<script>alert('Senha incorreta');</script>";
+        $error_message = "Senha incorreta. Tente novamente.";
     }
 }
 
+// Verifica se o usuário está autenticado
 if (!isset($_SESSION['authenticated']) || !$_SESSION['authenticated']) {
 ?>
 <!DOCTYPE html>
@@ -18,13 +19,22 @@ if (!isset($_SESSION['authenticated']) || !$_SESSION['authenticated']) {
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-    <form method="post">
-        <label for="password">Senha:</label>
-        <input type="password" name="password" id="password" required>
-        <button type="submit">Entrar</button>
-    </form>
+    <div class="container">
+        <h2>Gerenciador de Dívidas - Login</h2>
+        <?php if (isset($error_message)): ?>
+            <div class="alert alert-danger"><?= $error_message ?></div>
+        <?php endif; ?>
+        <form method="post">
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" class="form-control" name="password" id="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Entrar</button>
+        </form>
+    </div>
 </body>
 </html>
 <?php
@@ -35,7 +45,7 @@ include 'conexao.php';
 
 // Função para calcular o total de dívidas
 function getTotalDividas($conn) {
-    $sql = "SELECT SUM(valor_total) as total FROM dividas";
+    $sql = "SELECT SUM(valor_total) as total FROM dividas WHERE pago = 0";
     $result = $conn->query($sql);
     $row = $result->fetch_assoc();
     return $row['total'];
@@ -43,16 +53,18 @@ function getTotalDividas($conn) {
 
 // Função para calcular o total a pagar no mês
 function getTotalMes($conn) {
-    $sql = "SELECT SUM(valor_total / parcelas) as total_mes FROM dividas WHERE MONTH(data_vencimento) = MONTH(CURDATE()) AND YEAR(data_vencimento) = YEAR(CURDATE())";
+    $sql = "SELECT SUM(valor_total / parcelas) as total_mes FROM dividas WHERE pago = 0 AND MONTH(data_vencimento) = MONTH(CURDATE()) AND YEAR(data_vencimento) = YEAR(CURDATE())";
     $result = $conn->query($sql);
     $row = $result->fetch_assoc();
     return $row['total_mes'];
 }
 
-// Função para obter dívidas vencendo hoje
-function getDividasVencendoHoje($conn) {
-    $sql = "SELECT descricao, valor_total FROM dividas WHERE data_vencimento = CURDATE()";
-    return $conn->query($sql);
+// Função para calcular o total pago durante o ano
+function getTotalPagoAno($conn) {
+    $sql = "SELECT SUM(valor_total) as total_ano FROM dividas WHERE pago = 1 AND YEAR(data_vencimento) = YEAR(CURDATE())";
+    $result = $conn->query($sql);
+    $row = $result->fetch_assoc();
+    return $row['total_ano'];
 }
 
 // Atualizar ou excluir dívidas
@@ -85,7 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } elseif (isset($_POST['pago']) || isset($_POST['excluir'])) {
         $id = $_POST['id'];
         if (isset($_POST['pago'])) {
-            $sql = "UPDATE dividas SET parcelas = parcelas - 1 WHERE id = ? AND parcelas > 0";
+            $sql = "UPDATE dividas SET pago = 1 WHERE id = ?";
             $stmt = $conn->prepare($sql);
             $stmt->bind_param("i", $id);
             $stmt->execute();
@@ -126,11 +138,11 @@ function renderizarLinhaDivida($row) {
 }
 
 // Buscar dívidas
-$sql = "SELECT * FROM dividas";
+$sql = "SELECT * FROM dividas WHERE pago = 0";
 $result = $conn->query($sql);
 $totalDividas = getTotalDividas($conn);
 $totalMes = getTotalMes($conn);
-$dividasVencendoHoje = getDividasVencendoHoje($conn);
+$totalPagoAno = getTotalPagoAno($conn);
 
 ?>
 <!DOCTYPE html>
@@ -143,18 +155,6 @@ $dividasVencendoHoje = getDividasVencendoHoje($conn);
 <body>
 <div class="container">
     <h2>Gerenciador de Dívidas</h2>
-
-    <!-- Notificações -->
-    <?php if ($dividasVencendoHoje->num_rows > 0): ?>
-        <div class="alert alert-warning">
-            <strong>Atenção!</strong> Você tem dívidas vencendo hoje:
-            <ul>
-                <?php while ($row = $dividasVencendoHoje->fetch_assoc()): ?>
-                    <li><?= htmlspecialchars($row['descricao']) ?>: ¥<?= number_format($row['valor_total'], 0, ',', '.') ?></li>
-                <?php endwhile; ?>
-            </ul>
-        </div>
-    <?php endif; ?>
 
     <div class="row">
         <div class="col-md-8">
@@ -191,6 +191,7 @@ $dividasVencendoHoje = getDividasVencendoHoje($conn);
         <div class="col-md-4">
             <h3>Total de Dívidas: ¥ <?= number_format($totalDividas, 0, ',', '.') ?></h3>
             <h3>Total a Pagar Este Mês: ¥ <?= number_format($totalMes, 0, ',', '.') ?></h3>
+            <h3><a href="contas_pagas.php" class="btn btn-info">Ver Contas Pagas</a></h3>
         </div>
     </div>
     <h3>Dívidas Cadastradas</h3>
